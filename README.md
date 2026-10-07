@@ -29,7 +29,7 @@ A complete, overclocked port of Nicolae Dumitrache's **Next186 SoC PC** (80186-c
 > [!WARNING]
 > ### 🤖 AI-Assisted Port & Experimental Code Disclaimer
 > **Please read before using:**
-> I bought a **Sipeed Tang Nano 20K** because I really wanted to run the **Next186 DOS PC** core on it—only to discover that Next186 had only been ported to the Tang Nano 9K. Being a complete beginner with zero background in Verilog, FPGA timing closure, or SDRAM state machines, I decided to port and upgrade it myself using **only free-tier access to AI assistants (Claude, ChatGPT, and Grok)**.
+> I bought a **Sipeed Tang Nano 20K** because I really wanted to run the **Next186 DOS PC** core on it—only to discover that Next186 had only been ported to the Tang Nano 9K. Being a complete beginner with zero background in Verilog, FPGA timing closure, or SDRAM state machines, I decided to port and upgrade it myself using **only free-tier access to AI assistants (Claude, ChatGPT, Gemini, and Grok)**.
 >
 > By combining outputs from multiple models, cross-checking their mistakes, and testing hundreds of builds on real hardware, I managed to get a fast, working 80186 DOS PC on the Tang Nano 20K that boots **FreeDOS**, runs **Microsoft Windows 3.0** with a mouse, and plays classic DOS games (*Wolfenstein 3D*, *Eye of the Beholder*, *Prince of Persia*, *Ultima II*, etc.) with sound and expanded memory.
 >
