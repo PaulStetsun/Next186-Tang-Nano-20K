@@ -1,0 +1,106 @@
+// ============================================================================
+// Next186_SoC — Physical Constraints (.cst) for Sipeed Tang Nano 20K
+// Target Device: GW2AR-LV18QN88C8/I7 (Device Version C)
+//
+// Verified against official Sipeed schematics and reference designs:
+//  - github.com/sipeed/TangNano-20K-example (hdmi/, uart/, led/, nestang/)
+//  - github.com/nand2mario/sdram-tang-nano-20k
+//  - github.com/MiSTle-Dev/FPGA-Companion
+// ============================================================================
+
+// --- System Clock (27 MHz Crystal Oscillator) ---
+IO_LOC  "clk27M" 4;
+IO_PORT "clk27M" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+
+// --- Onboard Push Buttons (Active-High) ---
+// Tang Nano 20K S1/KEY1 = pin 88 = BTN[0] (USER / NMI, active-high)
+// Tang Nano 20K S2/KEY2 = pin 87 = BTN[1] (RESET, active-high)
+IO_LOC  "BTN[0]" 88;
+IO_PORT "BTN[0]" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+IO_LOC  "BTN[1]" 87;
+IO_PORT "BTN[1]" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+
+// --- SD Card DAT1/DAT2 Pull-Ups ---
+IO_LOC  "spi_pup[0]" 80;
+IO_PORT "spi_pup[0]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
+IO_LOC  "spi_pup[1]" 85;
+IO_PORT "spi_pup[1]" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
+
+// --- UART (COM1) ---
+IO_LOC  "usart_tx" 69;
+IO_PORT "usart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "usart_rx" 70;
+IO_PORT "usart_rx" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+
+// --- Direct PS/2 Keyboard & Mouse (Optional, Active Alongside USB Companion) ---
+IO_LOC  "ps2_kb_clk" 27;
+IO_PORT "ps2_kb_clk" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "ps2_kb_dat" 28;
+IO_PORT "ps2_kb_dat" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+// Uncomment below (and in Next186_SoC.v) to enable direct physical PS/2 Mouse on Pins 25/26:
+//IO_LOC  "ps2_mouse_clk" 25;
+//IO_PORT "ps2_mouse_clk" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+//IO_LOC  "ps2_mouse_dat" 26;
+//IO_PORT "ps2_mouse_dat" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+// --- Stereo Audio Output (1-bit Sigma-Delta PDM DAC) ---
+IO_LOC  "sigma_l" 29;
+IO_PORT "sigma_l" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
+IO_LOC  "sigma_r" 30;
+IO_PORT "sigma_r" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
+
+// --- HDMI (TMDS 720p60 Output) ---
+IO_LOC  "tmds_clk_p" 33,34;
+IO_PORT "tmds_clk_p" PULL_MODE=NONE DRIVE=8;
+IO_LOC  "tmds_d_p[0]" 35,36;
+IO_PORT "tmds_d_p[0]" PULL_MODE=NONE DRIVE=8;
+IO_LOC  "tmds_d_p[1]" 37,38;
+IO_PORT "tmds_d_p[1]" PULL_MODE=NONE DRIVE=8;
+IO_LOC  "tmds_d_p[2]" 39,40;
+IO_PORT "tmds_d_p[2]" PULL_MODE=NONE DRIVE=8;
+
+// --- Onboard MicroSD Card Slot (SPI Mode) ---
+// Native TF pins: sd_clk=83, sd_cmd=82(MOSI), sd_dat0=84(MISO), sd_dat3=81(CSn)
+IO_LOC  "spi_clk"  83;
+IO_PORT "spi_clk"  IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "spi_mosi" 82;
+IO_PORT "spi_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "spi_miso" 84;
+IO_PORT "spi_miso" IO_TYPE=LVCMOS33 PULL_MODE=DOWN;
+IO_LOC  "mmc_ncs"  81;
+IO_PORT "mmc_ncs"  IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+
+// --- Onboard LEDs (6x, Active-Low) ---
+IO_LOC  "LED[5]" 20;
+IO_LOC  "LED[4]" 19;
+IO_LOC  "LED[3]" 18;
+IO_LOC  "LED[2]" 17;
+IO_LOC  "LED[1]" 16;
+IO_LOC  "LED[0]" 15;
+IO_PORT "LED[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "LED[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "LED[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "LED[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "LED[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_PORT "LED[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+
+// --- Internal SiP SDR SDRAM ---
+// No IO_LOC constraints are needed for the internal GW2AR-18C SDRAM.
+// Gowin Place & Route automatically binds magic top-level port names:
+// (O_sdram_clk, O_sdram_cke, O_sdram_cs_n, O_sdram_cas_n, O_sdram_ras_n,
+//  O_sdram_wen_n, IO_sdram_dq[31:0], O_sdram_addr[10:0], O_sdram_ba[1:0],
+//  O_sdram_dqm[3:0]).
+
+// --- MiSTle FPGA Companion SPI Interface (External MCU: RP2040 / BL616 / ESP32) ---
+// Pi Pico: GP16=MISO GP17=CSN GP18=SCK GP19=MOSI GP22=IRQ
+// TN20K:   42=MISO   56=CSN   54=SCK   41=MOSI   51=IRQ
+IO_LOC  "mcu_spi_csn" 56;
+IO_PORT "mcu_spi_csn" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "mcu_spi_sck" 54;
+IO_PORT "mcu_spi_sck" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+IO_LOC  "mcu_spi_mosi" 41;
+IO_PORT "mcu_spi_mosi" IO_TYPE=LVCMOS33 PULL_MODE=NONE;
+IO_LOC  "mcu_spi_miso" 42;
+IO_PORT "mcu_spi_miso" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8;
+IO_LOC  "mcu_spi_irq" 51;
+IO_PORT "mcu_spi_irq" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;

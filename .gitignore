@@ -1,0 +1,28 @@
+# Gowin IDE temporary and user files
+*.gprj.user
+*_process_config.json
+impl/gwsynthesis/
+impl/temp/
+impl/pnr/*.db
+impl/pnr/*.binx
+impl/pnr/*.log
+impl/pnr/*.timing_paths
+impl/pnr/*.tr.html
+impl/pnr/*_tr_*.html
+impl/pnr/*.power.html
+impl/pnr/*.rpt.html
+impl/pnr/cmd.do
+impl/pnr/device.cfg
+src/**/temp/
+
+# Unpacked disk images (keep .zip in repo)
+*.img
+
+# Backup and scratch files
+*.bak
+*.bak_*
+*.patch
+*.diff
+*.vvp
+*.vcd
+$tmpfil$*
