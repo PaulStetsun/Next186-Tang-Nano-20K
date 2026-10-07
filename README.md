@@ -114,15 +114,14 @@ openFPGALoader -b tangnano20k impl/pnr/Next186_S_20K.fs
 
 ---
 
-### Step 3: Connect a Keyboard & Mouse
+### Step 3: Connect a Keyboard & Mouse (via MiSTle FPGA Companion)
 
-You can control the PC in **two ways** (both interfaces are active in hardware simultaneously):
-- **Option A (Recommended):** Use a modern **USB Keyboard and USB Mouse** via an external **[MiSTle FPGA Companion](https://github.com/MiSTle-Dev/FPGA-Companion)** microcontroller connected with 5 jumper wires (+ GND).
-- **Option B (No Companion Required):** Connect a classic **PS/2 Keyboard** (and optionally a **PS/2 Mouse**) directly to the Tang Nano 20K GPIO header.
+The tested and supported way to connect a **USB Keyboard and USB Mouse** (or a 2.4 GHz wireless keyboard + touchpad dongle) is via an external **[MiSTle FPGA Companion](https://github.com/MiSTle-Dev/FPGA-Companion)** microcontroller (such as a **Raspberry Pi Pico**) connected with 5 jumper wires (+ GND).
+*(Note: Legacy direct PS/2 pins on GPIO 27/28 & 25/26 remain in the Verilog source from the 9K port, but have not been tested on hardware and may conflict with the instant 8042 auto-ACK logic added for USB Companion operation — see [Known Issues](#-known-issues-limitations--open-questions)).*
 
 ---
 
-#### Option A (Recommended): USB Keyboard & Mouse via MiSTle FPGA Companion
+#### USB Keyboard & Mouse via MiSTle FPGA Companion
 
 The FPGA core includes a hardware SPI slave ([`mcu_spi.v`](src/companion/mcu_spi.v), [`sysctrl_pc.v`](src/companion/sysctrl_pc.v), [`hid_pc.v`](src/companion/hid_pc.v)) that implements the standard **[MiSTle FPGA Companion](https://github.com/MiSTle-Dev/FPGA-Companion)** protocol.
 
@@ -160,21 +159,9 @@ Regardless of which Companion board you choose, the **5 SPI pins on the Tang Nan
 
 ---
 
-#### Option B: Direct PS/2 Keyboard (& Mouse) Without an FPGA Companion
+#### Legacy / Untested Option: Direct PS/2 Pins (Pins 27/28 & 25/26)
 
-Don't have a Raspberry Pi Pico or Companion board? **You can connect a classic PS/2 Keyboard directly to the Tang Nano 20K!**
-
-The 8042 controller ([`src/KB_8042.v`](src/KB_8042.v)) keeps the physical PS/2 receiver active in parallel with the USB Companion FIFO:
-
-| PS/2 Device | Signal | **Tang Nano 20K Pin** | Status in Prebuilt Bitstream (`Next186_S_20K.fs`) |
-| :--- | :--- | :---: | :--- |
-| **PS/2 Keyboard** | `ps2_kb_clk` (Clock) | **Pin 27** | **Enabled out of the box** (`LVCMOS33 PULL_MODE=UP`) |
-| **PS/2 Keyboard** | `ps2_kb_dat` (Data) | **Pin 28** | **Enabled out of the box** (`LVCMOS33 PULL_MODE=UP`) |
-| **PS/2 Mouse** | `ps2_mouse_clk` (Clock) | **Pin 25** | Commented out by default; uncomment 4 lines in [`Next186_SoC.v`](src/Next186_SoC.v) & [`Next186_SoC.cst`](src/Next186_SoC.cst) and rebuild |
-| **PS/2 Mouse** | `ps2_mouse_dat` (Data) | **Pin 26** | Commented out by default; uncomment 4 lines in [`Next186_SoC.v`](src/Next186_SoC.v) & [`Next186_SoC.cst`](src/Next186_SoC.cst) and rebuild |
-
-> [!CAUTION]
-> **3.3V I/O Voltage Warning:** Tang Nano 20K GPIO pins are **3.3V (`LVCMOS33`)**, whereas PS/2 keyboards and mice are typically powered from **5V**. Use a bidirectional 5V↔3.3V logic level shifter (or at minimum series current-limiting resistors with 3.3V pull-ups) on the `CLK` and `DATA` lines to avoid damaging the FPGA inputs.
+The legacy `PS2Interface` instances from the 9K port are still present in [`src/KB_8042.v`](src/KB_8042.v) (`ps2_kb_clk` on **Pin 27**, `ps2_kb_dat` on **Pin 28**, and commented-out `ps2_mouse_clk`/`dat` on **Pins 25/26**). However, **direct PS/2 hardware has not been tested on this port** and likely will not work out of the box because `KB_8042.v` now uses an instant synthetic ACK queue (`auto_kb_q`) for USB Companion operation, which allows the BIOS to issue back-to-back port `0x60` writes faster than a physical PS/2 wire can clock them out. Use the **USB FPGA Companion** above for reliable keyboard and mouse input.
 
 ---
 
@@ -356,11 +343,11 @@ Below is a module-by-module engineering breakdown of every modification made com
   - Created [`hid_pc.v`](src/companion/hid_pc.v) to translate USB HID keyboard reports into PS/2 Set-2 make/break sequences (with hardware **typematic auto-repeat**: 500 ms initial delay, 15 Hz repeat rate) and USB HID mouse reports into standard 3-byte PS/2 mouse packets (with Y-axis sign inversion).
   - Upgraded [`KB_8042.v`](src/KB_8042.v) with a **16-entry Keyboard FIFO**, **16-entry Mouse FIFO**, full **8042 Controller Command (`0x64`) & PS/2 Mouse (`0xD4`) handshake state machine** (supporting `CTMOUSE` initialization commands `FF`, `F2`, `F4`, `F5`, `E6`, `E8`, `E9`, `EA`, `F3`), and the **Hardware Set-2 → Set-1 Scancode Translator** (`translate_en`, controlled via commands `0x90`/`0x91` or `SETKBD.COM`).
 
-### 8. Embedded FPGA Block ROM BIOS & Bootstrap Loader
+### 8. Embedded FPGA Block ROM BIOS & Bootstrap Loader (Inherited from `@hi631`'s 9K Port)
 - **Files:** [`src/mem_controller.v`](src/mem_controller.v#L83-L118), [`src/gowin_prom/gowin_prom_bios.v`](src/gowin_prom/gowin_prom_bios.v), [`src/gowin_prom/gowin_prom_boot.v`](src/gowin_prom/gowin_prom_boot.v), [`src/bootstrap.asm`](src/bootstrap.asm)
 - **How boot works:**
-  - Following `@hi631`'s Tang Nano 9K architecture, the 8 KB `BIOS_Next186.bin` is stored inside FPGA Block ROM (`Gowin_pROM_bios` / `BIOS_Next186.mi`) mapped at `F000:E000–FFFF` for reads while writes go to SDRAM (`dram_cs`).
-  - On cold reset, the bootstrap ROM (`Gowin_pROM_boot` / `bootstrap.asm`) initializes SD SPI and executes `movbios` (`REP MOVSW` across `F000:E000–FFFF`), copying the 8 KB BIOS from FPGA pROM into SDRAM. Writing the final word at `FFFFEh` sets `bios_rom_kill <= 1` in `mem_controller.v`, disconnecting the pROM and jumping to `F000:E05Bh` to boot DOS from the SD card's MBR (`LBA 0`). (If the User button `BTN[0]` is held during reset, it enters the `mon86` serial monitor instead; `bootstrap_fixed.asm` also provides a fixed-LBA `0x0003E7F0` fallback for `mon86`'s `b2` SD-BIOS loader command).
+  - Inherited directly from `@hi631`'s Tang Nano 9K design (with the Gowin `pROM` IP wrappers regenerated for `GW2AR-18C`), the 8 KB `BIOS_Next186.bin` is stored inside FPGA Block ROM (`Gowin_pROM_bios` / `BIOS_Next186.mi`) mapped at `F000:E000–FFFF` for reads while writes go to SDRAM (`dram_cs`).
+  - On cold reset, `@hi631`'s bootstrap ROM (`Gowin_pROM_boot` / `bootstrap.asm`) initializes SD SPI and executes `movbios` (`REP MOVSW` across `F000:E000–FFFF`), copying the 8 KB BIOS from FPGA pROM into SDRAM. Writing the final word at `FFFFEh` sets `bios_rom_kill <= 1` in `mem_controller.v`, disconnecting the pROM and jumping to `F000:E05Bh` to boot DOS from the SD card's MBR (`LBA 0`).
 
 ---
 
@@ -392,8 +379,9 @@ Because this port was developed iteratively with the help of AI assistants, most
    - **Current Status:** Standard `80x25` text mode, VGA Mode `13h` (`320x200x256`), planar 16-color EGA/VGA (`640x480x16` in Windows 3.0), and hardware CGA modes (`320x200x4` and `640x200x2`) have been tested on 720p60 HDMI.
    - **Open Questions:** Not all non-standard VGA modes, custom Mode-X CRTC timings, or resolution transitions have been tested yet. In addition, some CGA titles may still exhibit minor scanline/row-offset calculation artifacts that warrant further verification.
 
-5. **USB Flash Drive Passthrough (`src/sdc_pc.v`) — Incomplete:**
-   - While **USB Keyboard and Mouse** via the RP2040 FPGA Companion work reliably, the experimental SPI-to-I/O sector bridge for USB mass storage (`ports 0x270–0x277`) is unfinished and disabled in practice. Please use the Tang Nano 20K's onboard MicroSD slot for all DOS storage.
+5. **Direct PS/2 Keyboard/Mouse Pins (`Pins 27/28 & 25/26`) & USB Flash Drive Passthrough (`src/sdc_pc.v`):**
+   - **Direct PS/2:** While **USB Keyboard & Mouse via the RP2040 FPGA Companion** work reliably, the legacy direct PS/2 pins (`ps2_kb_clk`/`dat` on Pins 27/28) have not been tested on hardware. Because `KB_8042.v` now uses an instant synthetic ACK queue (`auto_kb_q`) for USB Companion operation while still pulsing `wr_kb` into `PS2Interface`, host-to-PS/2 writes may leave `PS2Interface`'s `data_in_ready` flag low and block physical PS/2 reception until `wr_kb` is gated or tested with a real PS/2 keyboard.
+   - **USB Storage:** The experimental SPI-to-I/O sector bridge for USB mass storage (`ports 0x270–0x277` in `src/companion/sdc_pc.v`) is unfinished and disabled in practice. Please use the Tang Nano 20K's onboard MicroSD slot for all DOS storage.
 
 ---
 
@@ -418,10 +406,10 @@ Because this port was developed iteratively with the help of AI assistants, most
 | | `mcu_spi_mosi` | **41** | `LVCMOS33` | Connect to Companion `MOSI` (e.g. Pi Pico `GP19`) |
 | | `mcu_spi_miso` | **42** | `LVCMOS33` | Connect to Companion `MISO` (e.g. Pi Pico `GP16`) |
 | | `mcu_spi_irq` | **51** | `LVCMOS33` | Connect to Companion `IRQn` (e.g. Pi Pico `GP22`) |
-| **Direct PS/2** | `ps2_kb_clk` | **27** | `LVCMOS33` | Direct PS/2 Keyboard Clock (Pull-Up enabled) |
-| | `ps2_kb_dat` | **28** | `LVCMOS33` | Direct PS/2 Keyboard Data (Pull-Up enabled) |
-| | `ps2_mouse_clk` | **25** | `LVCMOS33` | Direct PS/2 Mouse Clock *(uncomment in `.v`/`.cst`)* |
-| | `ps2_mouse_dat` | **26** | `LVCMOS33` | Direct PS/2 Mouse Data *(uncomment in `.v`/`.cst`)* |
+| **Direct PS/2** *(Legacy/Untested)* | `ps2_kb_clk` | **27** | `LVCMOS33` | Legacy PS/2 Keyboard Clock *(untested; use USB Companion)* |
+| | `ps2_kb_dat` | **28** | `LVCMOS33` | Legacy PS/2 Keyboard Data *(untested; use USB Companion)* |
+| | `ps2_mouse_clk` | **25** | `LVCMOS33` | Legacy PS/2 Mouse Clock *(commented out in `.v`/`.cst`)* |
+| | `ps2_mouse_dat` | **26** | `LVCMOS33` | Legacy PS/2 Mouse Data *(commented out in `.v`/`.cst`)* |
 | **Stereo Audio** | `sigma_l` | **29** | `LVCMOS33` | 1-bit Sigma-Delta PDM Audio Left |
 | | `sigma_r` | **30** | `LVCMOS33` | 1-bit Sigma-Delta PDM Audio Right |
 | **UART (COM1)** | `usart_tx` | **69** | `LVCMOS33` | Serial Port TX |
