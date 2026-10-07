@@ -31,11 +31,14 @@ A complete, overclocked port of Nicolae Dumitrache's **Next186 SoC PC** (80186-c
 > [!WARNING]
 > ### 🤖 AI-Assisted Port & Experimental Code Disclaimer
 > **Please read before using:**
-> I bought a **Sipeed Tang Nano 20K** because I really wanted to run the **Next186 DOS PC** core on it—only to discover that Next186 had only been ported to the Tang Nano 9K. Being a complete beginner with zero background in Verilog, FPGA timing closure, or SDRAM state machines, I decided to port and upgrade it myself using **only free-tier access to AI assistants (Claude, ChatGPT, Gemini, and Grok)**.
+> I bought a **Sipeed Tang Nano 20K** because I really wanted to run the **Next186 DOS PC** core on it—only to discover that Next186 had only been ported to the Tang Nano 9K. Beyond just getting a retro PC running, **my personal goal was to test whether modern AI assistants—given enough persistence—could actually handle complex Verilog, SDRAM state machines, and hardware timing closure**.
 >
-> By combining outputs from multiple models, cross-checking their mistakes, and testing hundreds of builds on real hardware, I managed to get a fast, working 80186 DOS PC on the Tang Nano 20K that boots **FreeDOS**, runs **Microsoft Windows 3.0** with a mouse, and plays classic DOS games (*Wolfenstein 3D*, *Eye of the Beholder*, *Prince of Persia*, *Ultima II*, etc.) with sound and expanded memory.
+> Starting with zero knowledge of how to write Verilog (and only a basic understanding of how an x86 CPU works), I spent **a full month** porting and debugging this project using **only free-tier access to AI models**:
+> - **Phase 1 (*Claude*):** Writing the initial port across many free-tier message limits until the project finally synthesized into a first bootable bitstream—which immediately froze on hardware.
+> - **Phase 2 (*Claude + ChatGPT + Grok*):** Days of step-by-step hardware debugging to fix the VGA pipeline and SDR SDRAM memory controller until FreeDOS finally booted and ran.
+> - **Phase 3 (*Gemini + Claude*):** Polishing the core to its current state—adding 7 MB Hardware LIM EMS 4.0, hardware CGA graphics, the 2048-sample OPL3/Sound Blaster audio FIFO, USB HID Companion mouse/keyboard support, and **Microsoft Windows 3.0** compatibility.
 >
-> **Because large portions of the glue logic, bus adapters, and hardware workarounds were written and iterated with AI assistance, there may still be unknown bugs, edge-case timing glitches, or non-standard HDL practices.** Use at your own risk—and pull requests from experienced FPGA developers are very welcome!
+> **Because the glue logic, bus adapters, and hardware workarounds were written and iterated with AI assistance, there may still be unknown bugs, edge-case timing glitches, or non-standard HDL practices.** Use at your own risk—and pull requests from experienced FPGA developers are very welcome!
 
 ---
 
