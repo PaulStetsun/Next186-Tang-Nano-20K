@@ -92,14 +92,17 @@ openFPGALoader -b tangnano20k impl/pnr/Next186_S_20K.fs
 
 ### Step 2: Prepare the MicroSD Card (`FDOS-128M.zip`)
 
-> [!IMPORTANT]
-> **Do NOT just format an SD card as FAT and copy files onto it!**
-> Next186 loads its 8 KB system BIOS (`BIOS_Next186.bin`) during cold boot from **raw physical sector LBA `0x0003E7F0` (sector `255,984`)**—the last 16 sectors of the first 128 MB of the SD card—before any filesystem exists. Therefore, you **must** write [`FDOS-128M.img`](FDOS-128M.zip) as a **raw disk image** to your MicroSD card (any standard SDHC card between 1 GB and 32 GB works).
+> [!NOTE]
+> **Where is the System BIOS Stored? Can I Just Copy Files to a FAT16 Card?**
+> Unlike the original OpenCores Next186 (which loaded its 8 KB BIOS from the final physical sectors of the SD card), this port—following `@hi631`'s Tang Nano 9K architecture—embeds the **8 KB Next186 BIOS (`BIOS_Next186.mi`) directly inside the FPGA bitstream (`Gowin_pROM_bios` in [`src/mem_controller.v`](src/mem_controller.v#L116-L117))**. On power-up, the internal bootstrap ROM (`bootchk` / `movbios`) automatically copies the BIOS from FPGA Block ROM into SDRAM at `F000:E000–FFFF` and boots standard DOS from the SD card's MBR (`LBA 0`).
+>
+> **Why write `FDOS-128M.img` instead of formatting in Windows Explorer?**
+> Standard DOS requires an **MBR + a bootable FreeDOS FAT16 Volume Boot Record (`KERNEL.SYS` boot sector)**, whereas Windows Explorer formats large SD cards as FAT32/exFAT with a non-bootable Windows boot sector. Writing [`FDOS-128M.img`](FDOS-128M.zip) gives you an instant bootable 128 MB FAT16 partition on any SDHC card (1 GB – 32 GB) — or, if you already have a bootable FreeDOS FAT16 SDHC card, you can simply copy the files from `FDOS-128M.img` onto it!
 
 #### Option 2A: One-Click Windows Script (`flash_sd.bat`)
 1. Insert your MicroSD card into your PC.
 2. Double-click [`flash_sd.bat`](flash_sd.bat) and accept the Administrator prompt.
-3. The script will automatically extract `FDOS-128M.zip` → `FDOS-128M.img`, detect your SD card, ask you to type `YES` to confirm, and write the raw 128 MB image (including the partition table, FreeDOS, games, Windows 3.0, and the embedded BIOS at sector `255,984`).
+3. The script will automatically extract `FDOS-128M.zip` → `FDOS-128M.img`, detect your SD card, ask you to type `YES` to confirm, and write the bootable 128 MB FreeDOS FAT16 image.
 
 #### Option 2B: Using BalenaEtcher, Win32DiskImager, Rufus, or `dd`
 1. Extract `FDOS-128M.img` from [`FDOS-128M.zip`](FDOS-128M.zip).
@@ -353,11 +356,11 @@ Below is a module-by-module engineering breakdown of every modification made com
   - Created [`hid_pc.v`](src/companion/hid_pc.v) to translate USB HID keyboard reports into PS/2 Set-2 make/break sequences (with hardware **typematic auto-repeat**: 500 ms initial delay, 15 Hz repeat rate) and USB HID mouse reports into standard 3-byte PS/2 mouse packets (with Y-axis sign inversion).
   - Upgraded [`KB_8042.v`](src/KB_8042.v) with a **16-entry Keyboard FIFO**, **16-entry Mouse FIFO**, full **8042 Controller Command (`0x64`) & PS/2 Mouse (`0xD4`) handshake state machine** (supporting `CTMOUSE` initialization commands `FF`, `F2`, `F4`, `F5`, `E6`, `E8`, `E9`, `EA`, `F3`), and the **Hardware Set-2 → Set-1 Scancode Translator** (`translate_en`, controlled via commands `0x90`/`0x91` or `SETKBD.COM`).
 
-### 8. Fixed-LBA SD Card Bootloader
-- **Files:** [`src/bootstrap_fixed.asm`](src/bootstrap_fixed.asm), [`src/gowin_prom/gowin_prom_boot.v`](src/gowin_prom/gowin_prom_boot.v)
-- **What changed:**
-  - The original Next186 ROM bootloader queried `CSD` capacity registers (`C_SIZE`) to compute the last sector of the SD card and read the 8 KB BIOS from the very end of the physical card. That meant flashing a 128 MB image onto a 16 GB or 32 GB SD card failed unless you manually hex-copied the BIOS to the final sectors of your specific card!
-  - [`bootstrap_fixed.asm`](src/bootstrap_fixed.asm) hardcodes the BIOS start address to **physical sector LBA `0x0003E7F0` (sector `255,984`)**, which is the exact location of the BIOS inside the 128 MB `FDOS-128M.img` image. Now **any SD card of any size works immediately after flashing `FDOS-128M.img`**!
+### 8. Embedded FPGA Block ROM BIOS & Bootstrap Loader
+- **Files:** [`src/mem_controller.v`](src/mem_controller.v#L83-L118), [`src/gowin_prom/gowin_prom_bios.v`](src/gowin_prom/gowin_prom_bios.v), [`src/gowin_prom/gowin_prom_boot.v`](src/gowin_prom/gowin_prom_boot.v), [`src/bootstrap.asm`](src/bootstrap.asm)
+- **How boot works:**
+  - Following `@hi631`'s Tang Nano 9K architecture, the 8 KB `BIOS_Next186.bin` is stored inside FPGA Block ROM (`Gowin_pROM_bios` / `BIOS_Next186.mi`) mapped at `F000:E000–FFFF` for reads while writes go to SDRAM (`dram_cs`).
+  - On cold reset, the bootstrap ROM (`Gowin_pROM_boot` / `bootstrap.asm`) initializes SD SPI and executes `movbios` (`REP MOVSW` across `F000:E000–FFFF`), copying the 8 KB BIOS from FPGA pROM into SDRAM. Writing the final word at `FFFFEh` sets `bios_rom_kill <= 1` in `mem_controller.v`, disconnecting the pROM and jumping to `F000:E05Bh` to boot DOS from the SD card's MBR (`LBA 0`). (If the User button `BTN[0]` is held during reset, it enters the `mon86` serial monitor instead; `bootstrap_fixed.asm` also provides a fixed-LBA `0x0003E7F0` fallback for `mon86`'s `b2` SD-BIOS loader command).
 
 ---
 
