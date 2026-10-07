@@ -190,7 +190,7 @@ The 8042 controller ([`src/KB_8042.v`](src/KB_8042.v)) keeps the physical PS/2 r
 
 ## 💾 What's Inside the Pre-Configured SD Card (`FDOS-128M.zip`)
 
-To keep the repository clean, lightweight (~1.7 MB compressed), and 100% license-safe, the included **`FDOS-128M.zip`** contains **FreeDOS**, **DosZip Commander (`DZ`, auto-started on boot in `AUTOEXEC.BAT`)**, **Dos Navigator (`DN`)**, the **VGA graphics & mouse test suite (`C:\TEST\` & `C:\TC-SAMPL\`)** from the Tang Nano 9K reference port, and all custom **Tang Nano 20K hardware drivers and diagnostic tools** (plus the embedded 8 KB Next186 BIOS at physical sector `255,984`).
+To keep the repository clean, lightweight (~1.7 MB compressed), and 100% license-safe, the included **`FDOS-128M.zip`** contains **FreeDOS**, **DosZip Commander (`DZ`, auto-started on boot in `AUTOEXEC.BAT`)**, **Dos Navigator (`DN`)**, the **VGA graphics & mouse test suite (`C:\TEST\` & `C:\TC-SAMPL\`)** from the Tang Nano 9K reference port, and all custom **Tang Nano 20K hardware drivers and diagnostic tools** (no proprietary games or Windows 3.0 are bundled inside the image).
 
 Once you flash `FDOS-128M.img` to your MicroSD card, Windows/Linux/macOS will mount it as a standard **125 MB FAT16 drive (`FREEDOS`)**, so you can simply drag-and-drop your own DOS games, compilers, or Windows 3.0 onto the card!
 
