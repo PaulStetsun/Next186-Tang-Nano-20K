@@ -1,0 +1,10 @@
+# Gowin FPGA bitstream (.fs = Fuse Stream, not F#) and generated IP files
+*.fs linguist-generated=true
+*.bin linguist-generated=true
+*.vo linguist-generated=true
+*.mi linguist-generated=true
+*.ipc linguist-generated=true
+*.mod linguist-generated=true
+*_tmp.v linguist-generated=true
+*.rpt.txt linguist-generated=true
+*.pin.html linguist-generated=true
